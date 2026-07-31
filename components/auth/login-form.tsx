@@ -57,6 +57,15 @@ export function LoginForm() {
         />
       </motion.div>
 
+      <motion.div variants={fadeUp} className="-mt-2 flex justify-end">
+        <Link
+          href="/forgot-password"
+          className="text-sm font-medium text-brand underline-offset-4 hover:underline"
+        >
+          Lupa password?
+        </Link>
+      </motion.div>
+
       <AnimatePresence>
         {state?.error ? (
           <motion.div
