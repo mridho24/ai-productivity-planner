@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { AuthCard } from "@/components/auth/auth-card";
 import { RegisterForm } from "@/components/auth/register-form";
 
 export const metadata: Metadata = {
@@ -8,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function RegisterPage() {
   return (
-    <div className="grid gap-8">
+    <div className="grid gap-6">
       <div className="grid gap-2">
         <p className="font-mono text-xs uppercase tracking-widest text-brand">
           Mulai dari nol
@@ -21,7 +22,9 @@ export default function RegisterPage() {
         </p>
       </div>
 
-      <RegisterForm />
+      <AuthCard>
+        <RegisterForm />
+      </AuthCard>
     </div>
   );
 }
