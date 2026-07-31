@@ -10,10 +10,10 @@ const steps = [
 
 export function BrandPanel() {
   return (
-    <aside className="dot-grid relative hidden overflow-hidden bg-[#0b1220] text-slate-100 lg:flex lg:flex-col lg:justify-between lg:p-12">
-      <div className="absolute inset-0 bg-[radial-gradient(60%_55%_at_15%_0%,rgb(45_212_191/0.12),transparent_62%),radial-gradient(50%_50%_at_100%_100%,rgb(14_165_233/0.12),transparent_62%)]" />
+    <aside className="dot-grid relative hidden overflow-hidden bg-black text-slate-100 lg:flex lg:flex-col lg:justify-between lg:p-12">
+      <div className="absolute inset-0 bg-[radial-gradient(60%_55%_at_15%_0%,rgb(45_212_191/0.12),transparent_62%),radial-gradient(50%_50%_at_100%_100%,rgb(255_255_255/0.06),transparent_62%)]" />
       <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand/20 blur-3xl" />
-      <div className="absolute -bottom-32 -left-20 h-80 w-80 rounded-full bg-[#0ea5e9]/10 blur-3xl" />
+      <div className="absolute -bottom-32 -left-20 h-80 w-80 rounded-full bg-[#2dd4bf]/10 blur-3xl" />
 
       <div className="relative flex h-full flex-col justify-between">
         <motion.div
@@ -87,7 +87,7 @@ export function BrandPanel() {
                       damping: 16,
                       delay: 0.7 + index * 0.18,
                     }}
-                    className="absolute -left-[26px] top-1 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-[#2dd4bf] ring-4 ring-[#0b1220]"
+                    className="absolute -left-[26px] top-1 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-[#2dd4bf] ring-4 ring-black"
                   />
                   <p className="font-mono text-[11px] tracking-widest text-slate-500">
                     0{index + 1}

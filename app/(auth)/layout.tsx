@@ -15,7 +15,6 @@ export default function AuthLayout({
         <div className="dot-grid-faint pointer-events-none absolute inset-0" />
         <div className="bg-auth-glow pointer-events-none absolute inset-0" />
         <div className="pointer-events-none absolute -right-28 top-16 h-80 w-80 rounded-full bg-brand/10 blur-3xl dark:bg-brand/20" />
-        <div className="pointer-events-none absolute -left-20 bottom-10 h-72 w-72 rounded-full bg-sky-400/10 blur-3xl dark:bg-sky-500/10" />
 
         <div className="relative w-full max-w-md">
           <div className="mb-8 flex items-center justify-between lg:hidden">
