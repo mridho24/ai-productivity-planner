@@ -156,4 +156,25 @@
     );
     background-size: 22px 22px;
   }
+  .dot-grid-faint {
+    background-image: radial-gradient(
+      circle,
+      rgb(16 24 40 / 0.055) 1px,
+      transparent 1.5px
+    );
+    background-size: 22px 22px;
+  }
+  .bg-auth-glow {
+    background-image:
+      radial-gradient(
+        ellipse 55% 45% at 12% 0%,
+        rgb(20 184 166 / 0.14),
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse 45% 40% at 95% 100%,
+        rgb(56 189 248 / 0.12),
+        transparent 70%
+      );
+  }
 }
