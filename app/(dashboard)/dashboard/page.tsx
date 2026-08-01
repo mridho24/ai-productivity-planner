@@ -1,21 +1,21 @@
+import { redirect } from "next/navigation";
+
 import { auth } from "@/auth";
+import { getDashboardStats, getUpcomingTasks } from "@/lib/dashboard";
+import { DashboardContent } from "@/components/dashboard/dashboard-content";
 
 export default async function DashboardPage() {
   const session = await auth();
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  const [stats, upcoming] = await Promise.all([
+    getDashboardStats(session.user.id),
+    getUpcomingTasks(session.user.id),
+  ]);
 
   return (
-    <div className="grid gap-6">
-      <div>
-        <p className="font-mono text-xs uppercase tracking-widest text-brand">
-          Ringkasan pekan ini
-        </p>
-        <h1 className="font-heading text-2xl font-semibold tracking-tight">
-          Halo, {session?.user?.name ?? "kamu"}
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Statistik dan tugas kamu akan muncul di sini pada section berikutnya.
-        </p>
-      </div>
-    </div>
+    <DashboardContent stats={stats} upcoming={upcoming} name={session.user.name} />
   );
 }
