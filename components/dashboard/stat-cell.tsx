@@ -1,30 +1,29 @@
 import { cn } from "@/lib/utils";
 
-export function StatCard({
+export function StatCell({
   label,
   value,
-  hint,
   danger = false,
+  className,
 }: {
   label: string;
   value: string | number;
-  hint?: string;
   danger?: boolean;
+  className?: string;
 }) {
   return (
-    <div className="rounded-xl bg-card p-4 ring-1 ring-foreground/10 sm:p-5">
+    <div className={cn("py-1", className)}>
       <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
         {label}
       </p>
       <p
         className={cn(
-          "mt-2 font-heading text-3xl font-semibold tabular-nums tracking-tight",
+          "mt-1.5 font-heading text-4xl font-semibold tabular-nums tracking-tight sm:text-5xl",
           danger && "text-destructive"
         )}
       >
         {value}
       </p>
-      {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
     </div>
   );
 }
