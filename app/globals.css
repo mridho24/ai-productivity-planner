@@ -178,3 +178,24 @@
       );
   }
 }
+
+@keyframes blink {
+  0%,
+  90%,
+  100% {
+    ry: 30;
+  }
+  95% {
+    ry: 3;
+  }
+}
+
+.animate-blink {
+  animation: blink 3s infinite ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-blink {
+    animation: none;
+  }
+}

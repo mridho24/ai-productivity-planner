@@ -12,6 +12,7 @@
     "db:seed": "prisma db seed"
   },
   "dependencies": {
+    "@paper-design/shaders-react": "^0.0.78",
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
     "bcryptjs": "^3.0.3",
