@@ -20,6 +20,7 @@ import {
   STATUS_LABEL,
   STATUS_ORDER,
   dueLabel,
+  formatMinutes,
   isTaskOverdue,
   type TaskDTO,
 } from "@/lib/tasks";
@@ -242,7 +243,7 @@ export function TaskDetail({ task }: { task: TaskDTO }) {
                 </span>
                 {subtask.estimatedMinutes ? (
                   <span className="shrink-0 font-mono text-xs text-muted-foreground">
-                    ± {subtask.estimatedMinutes}m
+                    ± {formatMinutes(subtask.estimatedMinutes)}
                   </span>
                 ) : null}
                 <button

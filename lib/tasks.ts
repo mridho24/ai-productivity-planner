@@ -66,6 +66,14 @@ export function isTaskOverdue(
   return isBefore(due, today);
 }
 
+export function formatMinutes(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  if (hours === 0) return `${rest}m`;
+  if (rest === 0) return `${hours}j`;
+  return `${hours}j ${rest}m`;
+}
+
 export function dueInDays(
   task: Pick<TaskDTO, "dueDate" | "status">
 ): number | null {
