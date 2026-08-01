@@ -194,8 +194,28 @@
   animation: blink 3s infinite ease-in-out;
 }
 
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(7%, 5%, 0) scale(1.08);
+  }
+  66% {
+    transform: translate3d(-6%, 7%, 0) scale(0.94);
+  }
+}
+
+.animate-drift {
+  animation: drift 9s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-blink {
+    animation: none;
+  }
+  .animate-drift {
     animation: none;
   }
 }

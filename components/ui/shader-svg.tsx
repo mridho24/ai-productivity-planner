@@ -1,12 +1,23 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
-import { MeshGradient } from "@paper-design/shaders-react";
+import { useEffect, useId, useRef, useSyncExternalStore } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { useTheme } from "next-themes";
 
-const LIGHT_COLORS = ["#99F6E4", "#5EEAD4", "#2DD4BF", "#134E4A", "#CCFBF1"];
+const subscribe = () => () => {};
+const useMounted = () =>
+  useSyncExternalStore(subscribe, () => true, () => false);
+
+const LIGHT_COLORS = ["#99F6E4", "#5EEAD4", "#2DD4BF", "#0F766E", "#CCFBF1"];
 const DARK_COLORS = ["#5EEAD4", "#2DD4BF", "#0D9488", "#042F2E", "#14B8A6"];
+
+const BLOBS = [
+  { left: -14, top: -16, size: 72, color: 0, duration: 9 },
+  { left: 42, top: -10, size: 60, color: 1, duration: 11 },
+  { left: 52, top: 44, size: 82, color: 2, duration: 10 },
+  { left: -18, top: 42, size: 66, color: 3, duration: 12 },
+  { left: 30, top: 56, size: 56, color: 1, duration: 8.5 },
+];
 
 const MAX_OFFSET = 8;
 const EYE_POSITION: { x: number; y: number }[] = [
@@ -17,35 +28,49 @@ const EYE_POSITION: { x: number; y: number }[] = [
 export function MeshGradientSVG({ className }: { className?: string }) {
   const { resolvedTheme } = useTheme();
   const reduceMotion = useReducedMotion();
+  const mounted = useMounted();
+
   const isDark = resolvedTheme === "dark";
-  const colors = isDark ? DARK_COLORS : LIGHT_COLORS;
+  const colors = !mounted || !isDark ? LIGHT_COLORS : DARK_COLORS;
 
   const clipId = useId().replace(/:/g, "");
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const [eyeOffset, setEyeOffset] = useState({ x: 0, y: 0 });
+  const eyeRefs = useRef<(SVGEllipseElement | null)[]>([]);
 
   useEffect(() => {
     if (reduceMotion) return;
 
     let raf = 0;
+    const current = { x: 0, y: 0 };
+    const target = { x: 0, y: 0 };
+
     function handleMouseMove(event: MouseEvent) {
       const rect = wrapperRef.current?.getBoundingClientRect();
       if (!rect) return;
-
       const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2;
-      const deltaX = (event.clientX - centerX) * 0.08;
-      const deltaY = (event.clientY - centerY) * 0.08;
+      target.x = Math.max(
+        -MAX_OFFSET,
+        Math.min(MAX_OFFSET, (event.clientX - centerX) * 0.08)
+      );
+      target.y = Math.max(
+        -MAX_OFFSET,
+        Math.min(MAX_OFFSET, (event.clientY - centerY) * 0.08)
+      );
+    }
 
-      raf = requestAnimationFrame(() => {
-        setEyeOffset({
-          x: Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, deltaX)),
-          y: Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, deltaY)),
-        });
+    function loop() {
+      current.x += (target.x - current.x) * 0.12;
+      current.y += (target.y - current.y) * 0.12;
+      EYE_POSITION.forEach((pos, index) => {
+        eyeRefs.current[index]?.setAttribute("cx", String(pos.x + current.x));
+        eyeRefs.current[index]?.setAttribute("cy", String(pos.y + current.y));
       });
+      raf = requestAnimationFrame(loop);
     }
 
     window.addEventListener("mousemove", handleMouseMove);
+    raf = requestAnimationFrame(loop);
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
       cancelAnimationFrame(raf);
@@ -57,9 +82,7 @@ export function MeshGradientSVG({ className }: { className?: string }) {
       ref={wrapperRef}
       className={className}
       animate={
-        reduceMotion
-          ? undefined
-          : { y: [0, -8, 0], scaleY: [1, 1.08, 1] }
+        reduceMotion ? undefined : { y: [0, -8, 0], scaleY: [1, 1.08, 1] }
       }
       transition={{
         duration: 2.8,
@@ -82,40 +105,46 @@ export function MeshGradientSVG({ className }: { className?: string }) {
         </defs>
 
         <foreignObject width="231" height="289" clipPath={`url(#${clipId})`}>
-          <div className="h-full w-full">
-            <MeshGradient colors={colors} className="h-full w-full" speed={1} />
+          <div className="relative h-full w-full overflow-hidden bg-[#0d9488]">
+            {BLOBS.map((blob, index) => (
+              <div
+                key={index}
+                className="animate-drift absolute rounded-full"
+                style={{
+                  left: `${blob.left}%`,
+                  top: `${blob.top}%`,
+                  width: `${blob.size}%`,
+                  height: `${blob.size}%`,
+                  background: `radial-gradient(circle at 50% 50%, ${colors[blob.color]} 0%, transparent 68%)`,
+                  animationDuration: `${blob.duration}s`,
+                  animationDelay: `${index * -1.4}s`,
+                }}
+              />
+            ))}
           </div>
         </foreignObject>
 
-        <motion.ellipse
+        <ellipse
+          ref={(node) => {
+            eyeRefs.current[0] = node;
+          }}
+          cx="80"
+          cy="120"
           rx="20"
           ry="30"
           fill="currentColor"
           className="animate-blink"
-          animate={
-            reduceMotion
-              ? undefined
-              : {
-                  cx: EYE_POSITION[0].x + eyeOffset.x,
-                  cy: EYE_POSITION[0].y + eyeOffset.y,
-                }
-          }
-          transition={{ type: "spring", stiffness: 150, damping: 15 }}
         />
-        <motion.ellipse
+        <ellipse
+          ref={(node) => {
+            eyeRefs.current[1] = node;
+          }}
+          cx="150"
+          cy="120"
           rx="20"
           ry="30"
           fill="currentColor"
           className="animate-blink"
-          animate={
-            reduceMotion
-              ? undefined
-              : {
-                  cx: EYE_POSITION[1].x + eyeOffset.x,
-                  cy: EYE_POSITION[1].y + eyeOffset.y,
-                }
-          }
-          transition={{ type: "spring", stiffness: 150, damping: 15 }}
         />
       </svg>
     </motion.div>
