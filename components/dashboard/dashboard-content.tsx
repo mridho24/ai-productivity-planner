@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { motion } from "motion/react";
 import { CalendarClock, ChartPie, Layers, Sparkles, Target } from "lucide-react";
 
@@ -8,10 +9,29 @@ import type { DashboardStats } from "@/lib/dashboard";
 import { dueLabel, isTaskOverdue, type TaskDTO } from "@/lib/tasks";
 import { cn } from "@/lib/utils";
 import { CompletionRing } from "@/components/dashboard/completion-ring";
-import { PriorityChart } from "@/components/dashboard/priority-chart";
 import { StatCell } from "@/components/dashboard/stat-cell";
 import { StatusStack } from "@/components/dashboard/status-stack";
 import { MeshGradientSVG } from "@/components/ui/shader-svg";
+
+const PriorityChart = dynamic(
+  () =>
+    import("@/components/dashboard/priority-chart").then(
+      (mod) => mod.PriorityChart
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div>
+        <div className="mx-auto size-40 animate-pulse rounded-full bg-muted" />
+        <div className="mt-5 space-y-2">
+          <div className="h-3.5 w-2/3 animate-pulse rounded bg-muted" />
+          <div className="h-3.5 w-1/2 animate-pulse rounded bg-muted" />
+          <div className="h-3.5 w-3/5 animate-pulse rounded bg-muted" />
+        </div>
+      </div>
+    ),
+  }
+);
 
 const fadeUp = {
   hidden: { opacity: 0, y: 12 },
