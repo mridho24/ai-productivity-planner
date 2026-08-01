@@ -82,7 +82,7 @@ export function DashboardContent({
           <p className="mt-2 text-[15px] text-muted-foreground">{summary}.</p>
         </div>
 
-        <MeshGradientSVG className="w-36 shrink-0 self-center sm:w-44 sm:self-end" />
+        <MeshGradientSVG className="w-20 shrink-0 self-center sm:w-28 sm:self-end" />
       </motion.div>
 
       {/* STAT BAND */}
