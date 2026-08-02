@@ -2,33 +2,86 @@
 
 import { useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { Plus } from "lucide-react";
+import { Download, Plus } from "lucide-react";
+import { toast } from "sonner";
 
-import type { TaskDTO } from "@/lib/tasks";
+import {
+  PRIORITY_ORDER,
+  type TaskDTO,
+} from "@/lib/tasks";
+import { downloadBlob, tasksToCsv, tasksToJson } from "@/lib/export";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/tasks/empty-state";
-import { TaskFilters, type TaskFilterState } from "@/components/tasks/task-filters";
+import {
+  TaskFilters,
+  type TaskFilterState,
+  type TaskSortOption,
+} from "@/components/tasks/task-filters";
 import { TaskFormDialog } from "@/components/tasks/task-form-dialog";
 import { TaskItem } from "@/components/tasks/task-item";
 
 const initialFilters: TaskFilterState = {
   status: "ALL",
   priority: "ALL",
+  category: "ALL",
   search: "",
+  sort: "newest",
 };
+
+function sortTasks(tasks: TaskDTO[], sort: TaskSortOption): TaskDTO[] {
+  switch (sort) {
+    case "newest":
+      return tasks.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    case "oldest":
+      return tasks.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    case "due":
+      return tasks.sort((a, b) => {
+        const dueA = a.dueDate ?? "9999-12-31";
+        const dueB = b.dueDate ?? "9999-12-31";
+        return dueA.localeCompare(dueB);
+      });
+    case "priority":
+      return tasks.sort(
+        (a, b) =>
+          PRIORITY_ORDER.indexOf(b.priority) -
+          PRIORITY_ORDER.indexOf(a.priority)
+      );
+  }
+}
 
 export function TaskManager({ tasks }: { tasks: TaskDTO[] }) {
   const [filters, setFilters] = useState<TaskFilterState>(initialFilters);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<TaskDTO | null>(null);
 
+  const categories = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          tasks
+            .map((task) => task.category)
+            .filter((category): category is string => Boolean(category))
+        )
+      ).sort((a, b) => a.localeCompare(b)),
+    [tasks]
+  );
+
   const filtered = useMemo(() => {
     const query = filters.search.trim().toLowerCase();
-    return tasks.filter((task) => {
+    const matches = tasks.filter((task) => {
       if (filters.status !== "ALL" && task.status !== filters.status) {
         return false;
       }
       if (filters.priority !== "ALL" && task.priority !== filters.priority) {
+        return false;
+      }
+      if (filters.category !== "ALL" && task.category !== filters.category) {
         return false;
       }
       if (
@@ -40,6 +93,7 @@ export function TaskManager({ tasks }: { tasks: TaskDTO[] }) {
       }
       return true;
     });
+    return sortTasks(matches, filters.sort);
   }, [tasks, filters]);
 
   function openCreate() {
@@ -50,6 +104,24 @@ export function TaskManager({ tasks }: { tasks: TaskDTO[] }) {
   function openEdit(task: TaskDTO) {
     setEditing(task);
     setFormOpen(true);
+  }
+
+  function handleExport(format: "csv" | "json") {
+    const date = new Date().toISOString().slice(0, 10);
+    if (format === "csv") {
+      downloadBlob(
+        tasksToCsv(filtered),
+        `planbreak-tasks-${date}.csv`,
+        "text/csv;charset=utf-8"
+      );
+    } else {
+      downloadBlob(
+        tasksToJson(filtered),
+        `planbreak-tasks-${date}.json`,
+        "application/json"
+      );
+    }
+    toast.success("Tugas berhasil diekspor");
   }
 
   return (
@@ -66,10 +138,29 @@ export function TaskManager({ tasks }: { tasks: TaskDTO[] }) {
             Atur, filter, dan pecah setiap rencana besar jadi langkah kecil.
           </p>
         </div>
-        <Button onClick={openCreate}>
-          <Plus />
-          Buat tugas
-        </Button>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <Download />
+                Ekspor
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleExport("csv")}>
+                CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport("json")}>
+                JSON
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Button onClick={openCreate}>
+            <Plus />
+            Buat tugas
+          </Button>
+        </div>
       </div>
 
       <TaskFilters
@@ -77,6 +168,7 @@ export function TaskManager({ tasks }: { tasks: TaskDTO[] }) {
         onChange={setFilters}
         count={filtered.length}
         total={tasks.length}
+        categories={categories}
       />
 
       {filtered.length === 0 ? (
