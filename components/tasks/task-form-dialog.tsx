@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { format } from "date-fns";
 import { Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 import type { Priority, Status } from "@prisma/client";
@@ -25,6 +26,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Select,
   SelectContent,
@@ -52,8 +54,8 @@ export function TaskFormDialog({
   const [category, setCategory] = useState(task?.category ?? "");
   const [priority, setPriority] = useState<Priority>(task?.priority ?? "MEDIUM");
   const [status, setStatus] = useState<Status>(task?.status ?? "TODO");
-  const [dueDate, setDueDate] = useState(
-    task?.dueDate ? task.dueDate.slice(0, 10) : ""
+  const [dueDate, setDueDate] = useState<Date | undefined>(
+    task?.dueDate ? new Date(task.dueDate) : undefined
   );
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -64,7 +66,7 @@ export function TaskFormDialog({
       category: category || null,
       priority,
       status,
-      dueDate: dueDate || null,
+      dueDate: dueDate ? format(dueDate, "yyyy-MM-dd") : null,
     };
 
     startTransition(async () => {
@@ -162,11 +164,10 @@ export function TaskFormDialog({
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="task-due">Tenggat</Label>
-              <Input
-                id="task-due"
-                type="date"
+              <DatePicker
                 value={dueDate}
-                onChange={(event) => setDueDate(event.target.value)}
+                onChange={(date) => setDueDate(date ?? undefined)}
+                placeholder="Tidak ada tenggat"
               />
             </div>
           </div>
