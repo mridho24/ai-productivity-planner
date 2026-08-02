@@ -65,8 +65,8 @@ export function RegisterForm() {
           name="password"
           label="Password"
           autoComplete="new-password"
-          placeholder="Minimal 6 karakter"
-          hint="Gunakan minimal 6 karakter untuk keamanan."
+          placeholder="Minimal 8 karakter"
+          strength
           required
         />
       </motion.div>

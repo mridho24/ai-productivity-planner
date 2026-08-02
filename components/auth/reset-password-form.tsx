@@ -39,7 +39,8 @@ export function ResetPasswordForm({ token }: { token: string }) {
           name="password"
           label="Password baru"
           autoComplete="new-password"
-          placeholder="Minimal 6 karakter"
+          placeholder="Minimal 8 karakter"
+          strength
           required
         />
       </motion.div>
