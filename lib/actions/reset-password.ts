@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
 import { passwordResetUrl, sendPasswordResetEmail } from "@/lib/email";
+import { passwordSchema } from "@/lib/actions/password-schema";
 
 const emailSchema = z.object({
   email: z.string().email("Email tidak valid"),
@@ -14,7 +15,7 @@ const emailSchema = z.object({
 
 const resetSchema = z.object({
   token: z.string().min(1, "Token tidak valid"),
-  password: z.string().min(6, "Password minimal 6 karakter"),
+  password: passwordSchema,
 });
 
 const TOKEN_TTL_MINUTES = 30;

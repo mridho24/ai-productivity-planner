@@ -6,11 +6,12 @@ import { z } from "zod";
 
 import { signIn, signOut } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { passwordSchema } from "@/lib/actions/password-schema";
 
 const registerSchema = z.object({
   name: z.string().min(2, "Nama minimal 2 karakter"),
   email: z.string().email("Email tidak valid"),
-  password: z.string().min(6, "Password minimal 6 karakter"),
+  password: passwordSchema,
 });
 
 export type AuthFormState = { error?: string } | undefined;
