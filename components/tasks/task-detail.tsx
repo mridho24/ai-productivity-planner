@@ -23,6 +23,7 @@ import {
   dueLabel,
   formatMinutes,
   isTaskOverdue,
+  type SubtaskDTO,
   type TaskDTO,
 } from "@/lib/tasks";
 import { cn } from "@/lib/utils";
@@ -40,6 +41,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { AiBreakdownPlaceholder } from "@/components/tasks/ai-breakdown-placeholder";
 import { DeleteTaskAlert } from "@/components/tasks/delete-task-alert";
+import { SubtaskEditDialog } from "@/components/tasks/subtask-edit-dialog";
 import { SubtaskForm } from "@/components/tasks/subtask-form";
 import { TaskFormDialog } from "@/components/tasks/task-form-dialog";
 
@@ -48,6 +50,7 @@ export function TaskDetail({ task }: { task: TaskDTO }) {
   const [pending, startTransition] = useTransition();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [editingSubtask, setEditingSubtask] = useState<SubtaskDTO | null>(null);
 
   const overdue = isTaskOverdue(task);
   const doneSubtasks = task.subtasks.filter((subtask) => subtask.done).length;
@@ -279,8 +282,17 @@ export function TaskDetail({ task }: { task: TaskDTO }) {
                   </button>
                   <button
                     type="button"
+                    onClick={() => setEditingSubtask(subtask)}
+                    disabled={pending}
+                    aria-label={`Edit ${subtask.title}`}
+                    className="ml-0.5 rounded-md p-1 text-muted-foreground transition-colors outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-30"
+                  >
+                    <Pencil className="size-3.5" />
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => handleDeleteSubtask(subtask.id)}
-                    className="ml-0.5 rounded-md p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                    className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                     aria-label={`Hapus ${subtask.title}`}
                   >
                     <Trash2 className="size-4" />
@@ -297,6 +309,15 @@ export function TaskDetail({ task }: { task: TaskDTO }) {
       </section>
 
       <AiBreakdownPlaceholder />
+
+      <SubtaskEditDialog
+        key={editingSubtask?.id ?? "closed"}
+        subtask={editingSubtask}
+        open={editingSubtask !== null}
+        onOpenChange={(open) => {
+          if (!open) setEditingSubtask(null);
+        }}
+      />
 
       <TaskFormDialog open={editOpen} onOpenChange={setEditOpen} task={task} />
       <DeleteTaskAlert

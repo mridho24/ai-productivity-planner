@@ -251,6 +251,39 @@ export async function moveSubtask(
   return { success: true };
 }
 
+export async function updateSubtask(
+  subtaskId: string,
+  input: {
+    title: string;
+    estimatedMinutes?: number | null;
+  }
+): Promise<ActionResult> {
+  const userId = await requireUserId();
+  if (!userId) return { error: "Kamu belum masuk" };
+
+  const parsed = subtaskInputSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Data tidak valid" };
+  }
+
+  const subtask = await prisma.subtask.findFirst({
+    where: { id: subtaskId, task: { userId } },
+    select: { id: true, taskId: true },
+  });
+  if (!subtask) return { error: "Subtask tidak ditemukan" };
+
+  await prisma.subtask.update({
+    where: { id: subtaskId },
+    data: {
+      title: parsed.data.title,
+      estimatedMinutes: parsed.data.estimatedMinutes ?? null,
+    },
+  });
+
+  revalidateTaskPaths(subtask.taskId);
+  return { success: true };
+}
+
 export async function toggleSubtaskDone(
   subtaskId: string
 ): Promise<ActionResult> {
