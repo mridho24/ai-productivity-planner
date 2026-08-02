@@ -18,10 +18,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+export type TaskSortOption = "newest" | "oldest" | "due" | "priority";
+
 export type TaskFilterState = {
   status: "ALL" | Status;
   priority: "ALL" | Priority;
+  category: string;
   search: string;
+  sort: TaskSortOption;
+};
+
+export const SORT_LABEL: Record<TaskSortOption, string> = {
+  newest: "Terbaru",
+  oldest: "Terlama",
+  due: "Tenggat terdekat",
+  priority: "Prioritas",
 };
 
 export function TaskFilters({
@@ -29,15 +40,18 @@ export function TaskFilters({
   onChange,
   count,
   total,
+  categories,
 }: {
   filters: TaskFilterState;
   onChange: (filters: TaskFilterState) => void;
   count: number;
   total: number;
+  categories: string[];
 }) {
   const hasFilter =
     filters.status !== "ALL" ||
     filters.priority !== "ALL" ||
+    filters.category !== "ALL" ||
     filters.search.trim().length > 0;
 
   return (
@@ -96,10 +110,57 @@ export function TaskFilters({
           </SelectContent>
         </Select>
 
+        {categories.length > 0 ? (
+          <Select
+            value={filters.category}
+            onValueChange={(value) =>
+              onChange({ ...filters, category: value })
+            }
+          >
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Semua kategori" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Semua kategori</SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category} value={category}>
+                  {category}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : null}
+
+        <Select
+          value={filters.sort}
+          onValueChange={(value) =>
+            onChange({ ...filters, sort: value as TaskSortOption })
+          }
+        >
+          <SelectTrigger className="w-44">
+            <SelectValue placeholder="Urutkan" />
+          </SelectTrigger>
+          <SelectContent>
+            {(Object.keys(SORT_LABEL) as TaskSortOption[]).map((option) => (
+              <SelectItem key={option} value={option}>
+                {SORT_LABEL[option]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         {hasFilter ? (
           <button
             type="button"
-            onClick={() => onChange({ status: "ALL", priority: "ALL", search: "" })}
+            onClick={() =>
+              onChange({
+                status: "ALL",
+                priority: "ALL",
+                category: "ALL",
+                search: "",
+                sort: filters.sort,
+              })
+            }
             className="inline-flex h-8 items-center gap-1 rounded-lg px-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <X className="size-3.5" />
