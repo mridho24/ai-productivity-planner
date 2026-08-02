@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { addSubtask } from "@/lib/actions/tasks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { EstimatedTimeFields } from "@/components/tasks/estimated-time-fields";
 
 export function SubtaskForm({ taskId }: { taskId: string }) {
   const router = useRouter();
@@ -60,36 +61,12 @@ export function SubtaskForm({ taskId }: { taskId: string }) {
         maxLength={160}
         className="min-w-40 flex-1"
       />
-      <div className="flex items-center gap-1.5">
-        <div className="flex items-center gap-1">
-          <Input
-            value={hours}
-            onChange={(event) => setHours(event.target.value)}
-            placeholder="1"
-            aria-label="Estimasi jam"
-            type="number"
-            min={0}
-            max={24}
-            inputMode="numeric"
-            className="w-14"
-          />
-          <span className="font-mono text-xs text-muted-foreground">jam</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <Input
-            value={minutes}
-            onChange={(event) => setMinutes(event.target.value)}
-            placeholder="30"
-            aria-label="Estimasi menit"
-            type="number"
-            min={0}
-            max={59}
-            inputMode="numeric"
-            className="w-14"
-          />
-          <span className="font-mono text-xs text-muted-foreground">mnt</span>
-        </div>
-      </div>
+      <EstimatedTimeFields
+        hours={hours}
+        minutes={minutes}
+        onHoursChange={setHours}
+        onMinutesChange={setMinutes}
+      />
       <Button type="submit" disabled={pending || !title.trim()}>
         {pending ? <Loader2 className="animate-spin" /> : <Plus />}
         Tambah
