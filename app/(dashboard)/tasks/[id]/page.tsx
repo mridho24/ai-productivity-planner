@@ -19,7 +19,9 @@ export default async function TaskDetailPage({
 
   const task = await prisma.task.findFirst({
     where: { id, userId: session.user.id },
-    include: { subtasks: { orderBy: { createdAt: "asc" } } },
+    include: {
+      subtasks: { orderBy: [{ position: "asc" }, { createdAt: "asc" }] },
+    },
   });
 
   if (!task) {

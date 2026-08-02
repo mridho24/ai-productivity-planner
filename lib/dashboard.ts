@@ -94,7 +94,9 @@ export async function getUpcomingTasks(
     where: { userId, status: { not: "DONE" }, dueDate: { not: null } },
     orderBy: { dueDate: "asc" },
     take: limit,
-    include: { subtasks: true },
+    include: {
+      subtasks: { orderBy: [{ position: "asc" }, { createdAt: "asc" }] },
+    },
   });
 
   return tasks.map(serializeTask);

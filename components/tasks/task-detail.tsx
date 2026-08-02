@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { ArrowLeft, CalendarClock, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, CalendarClock, ChevronDown, ChevronUp, Pencil, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ import type { Status } from "@prisma/client";
 import {
   deleteSubtask,
   deleteTask,
+  moveSubtask,
   toggleSubtaskDone,
   updateTaskStatus,
 } from "@/lib/actions/tasks";
@@ -86,6 +87,17 @@ export function TaskDetail({ task }: { task: TaskDTO }) {
         return;
       }
       toast.success("Sub-task dihapus");
+      router.refresh();
+    });
+  }
+
+  function handleMoveSubtask(subtaskId: string, direction: "up" | "down") {
+    startTransition(async () => {
+      const result = await moveSubtask(task.id, subtaskId, direction);
+      if (result?.error) {
+        toast.error(result.error);
+        return;
+      }
       router.refresh();
     });
   }
@@ -225,8 +237,8 @@ export function TaskDetail({ task }: { task: TaskDTO }) {
           </p>
         ) : (
           <ul className="mt-4 divide-y divide-border/60">
-            {task.subtasks.map((subtask) => (
-              <li key={subtask.id} className="flex items-center gap-3 py-2.5">
+            {task.subtasks.map((subtask, index) => (
+              <li key={subtask.id} className="flex items-center gap-2.5 py-2.5">
                 <Checkbox
                   checked={subtask.done}
                   onCheckedChange={() => handleToggleSubtask(subtask.id)}
@@ -246,14 +258,34 @@ export function TaskDetail({ task }: { task: TaskDTO }) {
                     ± {formatMinutes(subtask.estimatedMinutes)}
                   </span>
                 ) : null}
-                <button
-                  type="button"
-                  onClick={() => handleDeleteSubtask(subtask.id)}
-                  className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                  aria-label={`Hapus ${subtask.title}`}
-                >
-                  <Trash2 className="size-4" />
-                </button>
+                <div className="flex shrink-0 items-center gap-0.5">
+                  <button
+                    type="button"
+                    onClick={() => handleMoveSubtask(subtask.id, "up")}
+                    disabled={index === 0 || pending}
+                    aria-label={`Pindah ${subtask.title} ke atas`}
+                    className="rounded-md p-1 text-muted-foreground transition-colors outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-30"
+                  >
+                    <ChevronUp className="size-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleMoveSubtask(subtask.id, "down")}
+                    disabled={index === task.subtasks.length - 1 || pending}
+                    aria-label={`Pindah ${subtask.title} ke bawah`}
+                    className="rounded-md p-1 text-muted-foreground transition-colors outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-30"
+                  >
+                    <ChevronDown className="size-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteSubtask(subtask.id)}
+                    className="ml-0.5 rounded-md p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                    aria-label={`Hapus ${subtask.title}`}
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                </div>
               </li>
             ))}
           </ul>

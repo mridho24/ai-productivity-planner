@@ -193,13 +193,59 @@ export async function addSubtask(
   });
   if (!owner) return { error: "Tugas tidak ditemukan" };
 
+  const count = await prisma.subtask.count({ where: { taskId } });
+
   await prisma.subtask.create({
     data: {
       taskId,
       title: parsed.data.title,
       estimatedMinutes: parsed.data.estimatedMinutes ?? null,
+      position: count,
     },
   });
+
+  revalidateTaskPaths(taskId);
+  return { success: true };
+}
+
+export async function moveSubtask(
+  taskId: string,
+  subtaskId: string,
+  direction: "up" | "down"
+): Promise<ActionResult> {
+  const userId = await requireUserId();
+  if (!userId) return { error: "Kamu belum masuk" };
+
+  const owner = await prisma.task.findFirst({
+    where: { id: taskId, userId },
+    select: { id: true },
+  });
+  if (!owner) return { error: "Tugas tidak ditemukan" };
+
+  const subtasks = await prisma.subtask.findMany({
+    where: { taskId },
+    orderBy: [{ position: "asc" }, { createdAt: "asc" }],
+  });
+
+  const from = subtasks.findIndex((subtask) => subtask.id === subtaskId);
+  if (from === -1) return { error: "Subtask tidak ditemukan" };
+
+  const to = direction === "up" ? from - 1 : from + 1;
+  if (to < 0 || to >= subtasks.length) {
+    return { error: direction === "up" ? "Sudah di posisi paling atas" : "Sudah di posisi paling bawah" };
+  }
+
+  const reordered = [...subtasks];
+  [reordered[from], reordered[to]] = [reordered[to], reordered[from]];
+
+  await prisma.$transaction(
+    reordered.map((subtask, index) =>
+      prisma.subtask.update({
+        where: { id: subtask.id },
+        data: { position: index },
+      })
+    )
+  );
 
   revalidateTaskPaths(taskId);
   return { success: true };
