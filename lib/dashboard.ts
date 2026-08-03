@@ -101,3 +101,19 @@ export async function getUpcomingTasks(
 
   return tasks.map(serializeTask);
 }
+
+export async function getActiveTasks(
+  userId: string,
+  limit = 40
+): Promise<TaskDTO[]> {
+  const tasks = await prisma.task.findMany({
+    where: { userId, status: { not: "DONE" } },
+    orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
+    take: limit,
+    include: {
+      subtasks: { orderBy: [{ position: "asc" }, { createdAt: "asc" }] },
+    },
+  });
+
+  return tasks.map(serializeTask);
+}

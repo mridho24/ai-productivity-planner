@@ -9,6 +9,7 @@ import type { DashboardStats } from "@/lib/dashboard";
 import { dueLabel, isTaskOverdue, type TaskDTO } from "@/lib/tasks";
 import { cn } from "@/lib/utils";
 import { CompletionRing } from "@/components/dashboard/completion-ring";
+import { FocusPanel } from "@/components/dashboard/focus-panel";
 import { StatCell } from "@/components/dashboard/stat-cell";
 import { StatusStack } from "@/components/dashboard/status-stack";
 import { MeshGradientSVG } from "@/components/ui/shader-svg";
@@ -60,10 +61,12 @@ function SectionEyebrow({
 export function DashboardContent({
   stats,
   upcoming,
+  activeTasks,
   name,
 }: {
   stats: DashboardStats;
   upcoming: TaskDTO[];
+  activeTasks: TaskDTO[];
   name?: string | null;
 }) {
   const summary = [
@@ -232,6 +235,10 @@ export function DashboardContent({
             </ul>
           )}
         </section>
+      </motion.div>
+
+      <motion.div variants={fadeUp}>
+        <FocusPanel tasks={activeTasks} />
       </motion.div>
     </motion.div>
   );

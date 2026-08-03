@@ -1,7 +1,11 @@
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
-import { getDashboardStats, getUpcomingTasks } from "@/lib/dashboard";
+import {
+  getActiveTasks,
+  getDashboardStats,
+  getUpcomingTasks,
+} from "@/lib/dashboard";
 import { DashboardContent } from "@/components/dashboard/dashboard-content";
 
 export default async function DashboardPage() {
@@ -10,12 +14,18 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const [stats, upcoming] = await Promise.all([
+  const [stats, upcoming, activeTasks] = await Promise.all([
     getDashboardStats(session.user.id),
     getUpcomingTasks(session.user.id),
+    getActiveTasks(session.user.id),
   ]);
 
   return (
-    <DashboardContent stats={stats} upcoming={upcoming} name={session.user.name} />
+    <DashboardContent
+      stats={stats}
+      upcoming={upcoming}
+      activeTasks={activeTasks}
+      name={session.user.name}
+    />
   );
 }
