@@ -14,7 +14,7 @@ import {
 
 type PasswordInputProps = Omit<
   React.ComponentProps<"input">,
-  "id" | "label" | "type" | "value"
+  "id" | "label" | "type" | "value" | "defaultValue"
 > & {
   id: string;
   label: string;
@@ -46,7 +46,7 @@ export function PasswordInput({
         hint={hint}
         error={error}
         type={visible ? "text" : "password"}
-        value={value}
+        defaultValue=""
         onChange={(event) => {
           setValue(event.target.value);
           onChange?.(event);
