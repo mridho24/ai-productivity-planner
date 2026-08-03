@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { Download, Plus } from "lucide-react";
+import { Download, Plus, WandSparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/tasks/empty-state";
+import { QuickAddAi } from "@/components/tasks/quick-add-ai";
 import {
   TaskFilters,
   type TaskFilterState,
@@ -58,6 +59,7 @@ function sortTasks(tasks: TaskDTO[], sort: TaskSortOption): TaskDTO[] {
 export function TaskManager({ tasks }: { tasks: TaskDTO[] }) {
   const [filters, setFilters] = useState<TaskFilterState>(initialFilters);
   const [formOpen, setFormOpen] = useState(false);
+  const [quickOpen, setQuickOpen] = useState(false);
   const [editing, setEditing] = useState<TaskDTO | null>(null);
 
   const categories = useMemo(
@@ -139,6 +141,11 @@ export function TaskManager({ tasks }: { tasks: TaskDTO[] }) {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setQuickOpen(true)}>
+            <WandSparkles className="size-4" />
+            Tulis cepat
+          </Button>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline">
@@ -193,6 +200,8 @@ export function TaskManager({ tasks }: { tasks: TaskDTO[] }) {
         onOpenChange={setFormOpen}
         task={editing}
       />
+
+      <QuickAddAi open={quickOpen} onOpenChange={setQuickOpen} />
     </div>
   );
 }

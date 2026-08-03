@@ -49,6 +49,15 @@ const subtaskInputSchema = z.object({
     .nullable(),
 });
 
+const createTaskInputSchema = taskInputSchema.extend({
+  subtasks: z
+    .array(subtaskInputSchema)
+    .max(8, "Maksimal 8 sub-task")
+    .optional(),
+});
+
+export type SubtaskInput = z.infer<typeof subtaskInputSchema>;
+
 async function requireUserId() {
   const session = await auth();
   return session?.user?.id ?? null;
@@ -60,27 +69,44 @@ function revalidateTaskPaths(taskId?: string) {
   if (taskId) revalidatePath(`/tasks/${taskId}`);
 }
 
-export async function createTask(input: TaskInput): Promise<ActionResult> {
+export async function createTask(
+  input: TaskInput & { subtasks?: SubtaskInput[] }
+): Promise<ActionResult> {
   const userId = await requireUserId();
   if (!userId) return { error: "Kamu belum masuk" };
 
-  const parsed = taskInputSchema.safeParse(input);
+  const parsed = createTaskInputSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Data tidak valid" };
   }
 
   const data = parsed.data;
-  const task = await prisma.task.create({
-    data: {
-      userId,
-      title: data.title,
-      description: data.description || null,
-      category: data.category || null,
-      priority: data.priority,
-      status: data.status,
-      dueDate: data.dueDate ? new Date(data.dueDate) : null,
-      completedAt: data.status === "DONE" ? new Date() : null,
-    },
+  const task = await prisma.$transaction(async (tx) => {
+    const created = await tx.task.create({
+      data: {
+        userId,
+        title: data.title,
+        description: data.description || null,
+        category: data.category || null,
+        priority: data.priority,
+        status: data.status,
+        dueDate: data.dueDate ? new Date(data.dueDate) : null,
+        completedAt: data.status === "DONE" ? new Date() : null,
+      },
+    });
+
+    if (data.subtasks && data.subtasks.length > 0) {
+      await tx.subtask.createMany({
+        data: data.subtasks.map((subtask, index) => ({
+          taskId: created.id,
+          title: subtask.title,
+          estimatedMinutes: subtask.estimatedMinutes ?? null,
+          position: index,
+        })),
+      });
+    }
+
+    return created;
   });
 
   revalidateTaskPaths(task.id);
