@@ -39,7 +39,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { AiBreakdownPlaceholder } from "@/components/tasks/ai-breakdown-placeholder";
+import { AiBreakdown } from "@/components/tasks/ai-breakdown";
 import { DeleteTaskAlert } from "@/components/tasks/delete-task-alert";
 import { SubtaskEditDialog } from "@/components/tasks/subtask-edit-dialog";
 import { SubtaskForm } from "@/components/tasks/subtask-form";
@@ -308,7 +308,7 @@ export function TaskDetail({ task }: { task: TaskDTO }) {
         </div>
       </section>
 
-      <AiBreakdownPlaceholder />
+      <AiBreakdown task={task} />
 
       <SubtaskEditDialog
         key={editingSubtask?.id ?? "closed"}
