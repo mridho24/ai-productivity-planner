@@ -138,15 +138,7 @@ See `.env.example` for the full list with comments.
 
 ## Screenshots
 
-> **TODO** — add screenshots here.
->
-> To fill this section: save images to `public/screenshots/` (e.g.
-> `dashboard.png`, `tasks.png`, `ai-breakdown.png`, `insights.png`) and
-> reference them below, for example:
->
-> ```md
-> ![Dashboard](public/screenshots/dashboard.png)
-> ```
+![Dashboard](public/screenshots/dashboard.png)
 
 ---
 
@@ -184,4 +176,4 @@ ai-productivity-planner/
 
 ## License
 
-Private project — for portfolio and demonstration purposes.
+Personal project — for private use. All rights reserved.
