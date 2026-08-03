@@ -1,6 +1,9 @@
 import { GoogleGenAI, Type, type Schema } from "@google/genai";
+import type { Priority } from "@prisma/client";
 
 const GEMINI_MODEL = "gemini-flash-latest";
+
+const PRIORITY_VALUES: Priority[] = ["LOW", "MEDIUM", "HIGH"];
 
 export class AiUnavailableError extends Error {
   constructor(message: string) {
@@ -258,4 +261,262 @@ export async function generateWeeklyInsight(
 
   const text = await runAi(prompt, INSIGHT_SCHEMA);
   return sanitizeInsight(parseJson(text));
+}
+
+export type PrioritySuggestion = {
+  taskId: string;
+  suggestedPriority: Priority;
+  reasoning: string;
+  focusScore: number;
+};
+
+export type TaskForPrioritization = {
+  id: string;
+  title: string;
+  priority: Priority;
+  category: string | null;
+  dueDate: string | null;
+  overdue: boolean;
+};
+
+export type ParsedSubtask = {
+  title: string;
+  estimatedMinutes: number | null;
+};
+
+export type ParsedTask = {
+  title: string;
+  description: string | null;
+  category: string | null;
+  priority: Priority;
+  dueDate: string | null;
+  subtasks: ParsedSubtask[];
+};
+
+const PRIORITY_SCHEMA: Schema = {
+  type: Type.OBJECT,
+  description: "Hasil analisis prioritas untuk daftar tugas.",
+  properties: {
+    suggestions: {
+      type: Type.ARRAY,
+      description: "Saran prioritas untuk setiap tugas.",
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          taskId: { type: Type.STRING, description: "ID tugas yang dianalisis." },
+          suggestedPriority: {
+            type: Type.STRING,
+            enum: PRIORITY_VALUES,
+            description: "Prioritas yang disarankan.",
+          },
+          reasoning: {
+            type: Type.STRING,
+            description: "Alasan singkat dalam bahasa Indonesia.",
+          },
+          focusScore: {
+            type: Type.INTEGER,
+            description:
+              "Skor fokus 0 sampai 100 (lebih tinggi = lebih penting dikerjakan).",
+          },
+        },
+        required: ["taskId", "suggestedPriority", "reasoning", "focusScore"],
+      },
+    },
+  },
+  required: ["suggestions"],
+};
+
+const PARSE_TASK_SCHEMA: Schema = {
+  type: Type.OBJECT,
+  description: "Tugas terstruktur hasil terjemahan kalimat bebas.",
+  properties: {
+    title: { type: Type.STRING, description: "Judul singkat tugas." },
+    description: { type: Type.STRING, description: "Deskripsi opsional." },
+    category: { type: Type.STRING, description: "Kategori singkat opsional." },
+    priority: {
+      type: Type.STRING,
+      enum: PRIORITY_VALUES,
+      description: "Prioritas yang masuk akal.",
+    },
+    dueDate: {
+      type: Type.STRING,
+      description:
+        "Tanggal jatuh tempo format YYYY-MM-DD (null jika tidak disebutkan).",
+    },
+    subtasks: {
+      type: Type.ARRAY,
+      description: "Langkah kecil opsional (maksimal 8).",
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          title: { type: Type.STRING, description: "Judul sub-task." },
+          estimatedMinutes: {
+            type: Type.INTEGER,
+            description: "Estimasi pengerjaan dalam menit (5-480).",
+          },
+        },
+        required: ["title"],
+      },
+    },
+  },
+  required: ["title"],
+};
+
+export function sanitizePrioritySuggestions(
+  value: unknown,
+  validTaskIds: Set<string>
+): PrioritySuggestion[] {
+  if (typeof value !== "object" || value === null) return [];
+  const raw = value as Record<string, unknown>;
+  if (!Array.isArray(raw.suggestions)) return [];
+
+  const seen = new Set<string>();
+  const result: PrioritySuggestion[] = [];
+
+  for (const item of raw.suggestions) {
+    if (typeof item !== "object" || item === null) continue;
+    const entry = item as Record<string, unknown>;
+
+    const taskId = typeof entry.taskId === "string" ? entry.taskId : "";
+    if (!taskId || !validTaskIds.has(taskId) || seen.has(taskId)) continue;
+
+    const suggestedPriority = PRIORITY_VALUES.includes(
+      entry.suggestedPriority as Priority
+    )
+      ? (entry.suggestedPriority as Priority)
+      : "MEDIUM";
+    const reasoning =
+      typeof entry.reasoning === "string"
+        ? entry.reasoning.trim().slice(0, 200)
+        : "";
+    const score = Number(entry.focusScore);
+    const focusScore = Number.isFinite(score)
+      ? Math.min(100, Math.max(0, Math.round(score)))
+      : 50;
+
+    seen.add(taskId);
+    result.push({ taskId, suggestedPriority, reasoning, focusScore });
+  }
+
+  return result;
+}
+
+function isValidDateString(date: string): boolean {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (!match) return false;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return false;
+  const parsed = new Date(year, month - 1, day);
+  return (
+    parsed.getFullYear() === year &&
+    parsed.getMonth() === month - 1 &&
+    parsed.getDate() === day
+  );
+}
+
+export function sanitizeParsedTask(value: unknown): ParsedTask | null {
+  if (typeof value !== "object" || value === null) return null;
+  const raw = value as Record<string, unknown>;
+
+  const title = typeof raw.title === "string" ? raw.title.trim().slice(0, 120) : "";
+  if (!title) return null;
+
+  const description =
+    typeof raw.description === "string"
+      ? raw.description.trim().slice(0, 2000) || null
+      : null;
+  const category =
+    typeof raw.category === "string"
+      ? raw.category.trim().slice(0, 60) || null
+      : null;
+  const priority = PRIORITY_VALUES.includes(raw.priority as Priority)
+    ? (raw.priority as Priority)
+    : "MEDIUM";
+
+  const dueDate =
+    typeof raw.dueDate === "string" && isValidDateString(raw.dueDate)
+      ? raw.dueDate
+      : null;
+
+  const subtasks: ParsedSubtask[] = [];
+  if (Array.isArray(raw.subtasks)) {
+    for (const item of raw.subtasks) {
+      if (subtasks.length >= 8) break;
+      if (typeof item !== "object" || item === null) continue;
+      const entry = item as Record<string, unknown>;
+      const subtaskTitle =
+        typeof entry.title === "string" ? entry.title.trim().slice(0, 160) : "";
+      if (!subtaskTitle) continue;
+      const minutes = Number(entry.estimatedMinutes);
+      const estimatedMinutes = Number.isFinite(minutes)
+        ? Math.min(480, Math.max(5, Math.round(minutes)))
+        : null;
+      subtasks.push({ title: subtaskTitle, estimatedMinutes });
+    }
+  }
+
+  return { title, description, category, priority, dueDate, subtasks };
+}
+
+export async function generatePrioritySuggestions(
+  tasks: TaskForPrioritization[]
+): Promise<PrioritySuggestion[]> {
+  const taskLines = tasks
+    .map(
+      (task) =>
+        `- [${task.id}] "${task.title}" (prioritas sekarang: ${task.priority}${
+          task.category ? `, kategori: ${task.category}` : ""
+        }${task.dueDate ? `, tenggat: ${task.dueDate}` : ""}${
+          task.overdue ? ", TERLAMBAT" : ""
+        })`
+    )
+    .join("\n");
+
+  const prompt = [
+    "Kamu adalah asisten manajer prioritas tugas.",
+    "Analisis daftar tugas aktif berikut dan beri saran prioritas serta skor fokus.",
+    "",
+    "Daftar tugas:",
+    taskLines || "- tidak ada",
+    "",
+    "Aturan:",
+    "- Setiap tugas WAJIB mendapat satu saran",
+    "- suggestedPriority: LOW, MEDIUM, atau HIGH",
+    "- focusScore 0-100: seberapa penting dikerjakan lebih dulu (tinggi = makin dulu)",
+    "- Pertimbangkan tenggat (tugas terlambat harus tinggi), kategori, dan beban",
+    "- reasoning: 1 kalimat alasan singkat dalam bahasa Indonesia",
+  ].join("\n");
+
+  const text = await runAi(prompt, PRIORITY_SCHEMA);
+  const validIds = new Set(tasks.map((task) => task.id));
+  return sanitizePrioritySuggestions(parseJson(text), validIds);
+}
+
+export async function parseTaskFromText(text: string): Promise<ParsedTask | null> {
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(
+    2,
+    "0"
+  )}-${String(today.getDate()).padStart(2, "0")}`;
+  const weekday = today.toLocaleDateString("id-ID", { weekday: "long" });
+
+  const prompt = [
+    "Kamu adalah asisten yang mengubah kalimat bebas menjadi data tugas terstruktur.",
+    `Hari ini: ${weekday}, ${todayStr}.`,
+    "",
+    `Kalimat user: "${text}"`,
+    "",
+    "Aturan:",
+    "- title: WAJIB, singkat dan jelas",
+    "- Interpretasikan kata relatif seperti 'hari ini', 'besok', 'lusa' menjadi tanggal YYYY-MM-DD",
+    "- priority: pilih LOW/MEDIUM/HIGH yang paling masuk akal",
+    "- category: kategori singkat (misal Kerja, Pribadi, Belajar); null jika tidak jelas",
+    "- subtasks: pecah jadi langkah kecil bila memungkinkan, maksimal 8",
+    "- Jika kalimat tidak bermakna sebagai tugas, tetap beri title terbaik yang bisa disimpulkan",
+  ].join("\n");
+
+  const aiText = await runAi(prompt, PARSE_TASK_SCHEMA);
+  return sanitizeParsedTask(parseJson(aiText));
 }
